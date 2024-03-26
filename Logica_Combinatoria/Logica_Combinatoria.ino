@@ -1,17 +1,45 @@
-// Declaración de arreglos y variables globales
+#include <LiquidCrystal.h>
+
+// select the pins used on the LCD panel
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
 int numBin[2]; // Arreglo para almacenar la representación binaria del número
 int numGrey[2];      // Arreglo para almacenar la representación de código Gray
 int comparacion;  // Variable para realizar la suma de bits binarios
 
+const int Trigger = 2; // Pin digital 2 para el Trigger del sensor
+const int Echo = 3;    // Pin digital 3 para el Echo del sensor
+
+
 void setup(void) {
   // Inicialización de comunicación serial
   Serial.begin(9600);
+
+   // Configuración del sensor de ultrasonido
+  pinMode(Trigger, OUTPUT); // Pin como salida para el Trigger
+  pinMode(Echo, INPUT);     // Pin como entrada para el Echo
+
   // Configuración de pines como salidas digitales
-  pinMode(8, OUTPUT);
-  pinMode(9, OUTPUT);
   pinMode(10, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(12, OUTPUT);
 }
 
+void Hexadecimal(int numero){
+  if (numero >= 8){
+    lcd.begin(16, 2);              // start the library
+    lcd.setCursor(0,0);
+    lcd.print("Hexadecimal"); 
+    lcd.setCursor(14,0);
+    lcd.print(0); 
+  }else{
+    lcd.begin(16, 2);              // start the library
+  lcd.setCursor(0,0);
+  lcd.print("Hexadecimal"); 
+  lcd.setCursor(14,0);
+  lcd.print(numero); 
+  }
+}
 // Función para convertir un número a su representación binaria
 void Binario(int numero) {
   switch (numero) {
@@ -59,13 +87,14 @@ void Binario(int numero) {
   }
 }
 
+
 // Función para escribir en los pines digitales según la representación de código Gray
 void escribirCompuerta() {
   for (int i = 0; i < 3; i++) {
     if (numGrey[i] == 1) {
-      digitalWrite(i + 8, HIGH); // Encender el pin correspondiente
+      digitalWrite(i + 10, HIGH); // Encender el pin correspondiente
     } else {
-      digitalWrite(i + 8, LOW);  // Apagar el pin correspondiente
+      digitalWrite(i + 10, LOW);  // Apagar el pin correspondiente
     }
   }
 }
@@ -88,29 +117,50 @@ int sumaBinario(int num1, int num2) {
   }
 }
 
-void loop(void) {
-  // Lectura del valor analógico del pin A5
-  int reading = analogRead(A5);
-  // Mapeo del valor analógico a un rango entre 0 y 7
-  float mapeo = map(reading, 80, 600, 0, 7);
-  // Redondeo del valor mapeado
-  int redondeo = int(round(mapeo));
+void loop() {
+  // Genera un pulso corto en el pin de Trigger del sensor de ultrasonido
+  digitalWrite(Trigger, LOW);
+  delayMicroseconds(2);
+  digitalWrite(Trigger, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(Trigger, LOW);
+
+  // Lee el tiempo que tarda en llegar el eco
+  long duration = pulseIn(Echo, HIGH);
+
+  // Calcula la distancia en centímetros
+  int distance = duration * 0.034 / 2;
+
+  // Impresión de la distancia por serial
+  Serial.print("Distancia: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // Mapeo de la distancia a un rango entre 0 y 7
+  int redondeo = map(distance, 0, 21, 0, 7);
+
+  //Mostrar el hexadecimal en el LCD
+  Hexadecimal(redondeo);
   // Conversión del número redondeado a su representación binaria
   Binario(redondeo);
+
   // Impresión del número redondeado por serial
   Serial.println(redondeo);
   Serial.println("binario");
-  Serial.println(numBin[0]);  // Impresión del primer bit binario
-  Serial.println(numBin[1]);  // Impresión del segundo bit binario
-  Serial.println(numBin[2]);  // Impresión del tercer bit binario
+  Serial.println(numBin[0]); // Impresión del primer bit binario
+  Serial.println(numBin[1]); // Impresión del segundo bit binario
+  Serial.println(numBin[2]); // Impresión del tercer bit binario
+
   // Conversión de la representación binaria a código Gray
   Grey();
   Serial.println("grey");
-  Serial.println(numGrey[0]);        // Impresión del A de código Gray
-  Serial.println(numGrey[1]);        // Impresión del B de código Gray
-  Serial.println(numGrey[2]);        // Impresión del C de código Gray que al final no influye 
+  Serial.println(numGrey[0]); // Impresión del A de código Gray
+  Serial.println(numGrey[1]); // Impresión del B de código Gray
+  Serial.println(numGrey[2]); // Impresión del C de código Gray 
+
   // Escritura en los pines digitales según la representación de código Gray
   escribirCompuerta();
+
   // Retardo de 1 segundo antes de repetir el bucle
   delay(1000);
 }
