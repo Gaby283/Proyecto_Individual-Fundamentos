@@ -1,5 +1,10 @@
 #include <LiquidCrystal.h>
 
+//Lecturas de las señales retroalimentadas 
+const int binFB0 = A5;
+const int binFB1 = A4;
+const int binFB2 = A3;
+
 // select the pins used on the LCD panel
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
@@ -15,7 +20,12 @@ void setup(void) {
   // Inicialización de comunicación serial
   Serial.begin(9600);
 
-   // Configuración del sensor de ultrasonido
+  //Pines de entrada de la retroalimentación
+  pinMode(binFB0, INPUT);
+  pinMode(binFB1, INPUT);
+  pinMode(binFB2, INPUT);
+
+  // Configuración del sensor de ultrasonido
   pinMode(Trigger, OUTPUT); // Pin como salida para el Trigger
   pinMode(Echo, INPUT);     // Pin como entrada para el Echo
 
@@ -25,21 +35,30 @@ void setup(void) {
   pinMode(12, OUTPUT);
 }
 
-void Hexadecimal(int numero){
-  if (numero >= 8){
+void LCD(int numero, int entrada){
+  if (entrada >= 8){
     lcd.begin(16, 2);              // start the library
     lcd.setCursor(0,0);
     lcd.print("Hexadecimal"); 
     lcd.setCursor(14,0);
-    lcd.print(0); 
+    lcd.print(0);              
+    lcd.setCursor(0,1);
+    lcd.print("Entrada "); 
+    lcd.setCursor(14,1);
+    lcd.print(0);
   }else{
     lcd.begin(16, 2);              // start the library
   lcd.setCursor(0,0);
   lcd.print("Hexadecimal"); 
   lcd.setCursor(14,0);
   lcd.print(numero); 
+  lcd.setCursor(0,1);
+  lcd.print("Entrada "); 
+  lcd.setCursor(14,1);
+  lcd.print(entrada);
   }
 }
+
 // Función para convertir un número a su representación binaria
 void Binario(int numero) {
   switch (numero) {
@@ -118,6 +137,13 @@ int sumaBinario(int num1, int num2) {
 }
 
 void loop() {
+  //Leer el valor de la retroalimentación}
+  int bitFB2 = digitalRead(binFB2);
+  int bitFB1 = digitalRead(binFB1);
+  int bitFB0 = digitalRead(binFB0);
+
+  int hexadecimal = ((bitFB2 * 4) + (bitFB1 * 2) + (bitFB0 * 1));
+
   // Genera un pulso corto en el pin de Trigger del sensor de ultrasonido
   digitalWrite(Trigger, LOW);
   delayMicroseconds(2);
@@ -137,10 +163,10 @@ void loop() {
   Serial.println(" cm");
 
   // Mapeo de la distancia a un rango entre 0 y 7
-  int redondeo = map(distance, 0, 21, 0, 7);
+  int redondeo = map(distance, 0, 28, 0, 7);
 
-  //Mostrar el hexadecimal en el LCD
-  Hexadecimal(redondeo);
+  //Mostrar en LCD
+  LCD(hexadecimal, redondeo);
   // Conversión del número redondeado a su representación binaria
   Binario(redondeo);
 
